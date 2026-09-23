@@ -28,6 +28,7 @@ describe('ledger', () => {
 
   test('a miss names the idle gap past the TTL before a generic prefix change', async () => {
     expect(missReason(U(140_000, 0), { ...CTX, startMs: 7 * 60_000 })).toBe('idle 7m > 5m ttl')
+    expect(missReason(U(140_000, 0), { ...CTX, startMs: 320_000 })).toBe('idle 5m20s > 5m ttl')
     expect(missReason(U(140_000, 0), CTX)).toBe('prefix changed')
   })
 

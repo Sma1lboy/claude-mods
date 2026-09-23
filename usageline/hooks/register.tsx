@@ -152,6 +152,8 @@ export const register: Register = on => {
         if (prevEndMs !== null && now - prevEndMs < TTL_MS + 2000) redraw($)
       })
     })
+    // The hint may have drawn before this start finished.
+    redraw($)
     return result
   })
 
