@@ -12,8 +12,6 @@ const TTL_MS = 5 * 60_000
 const TICK_MS = 5000
 /** How often custom-command widgets rerun their command. */
 const COMMAND_EVERY_MS = 30_000
-/** Output tokens a response needs before its speed counts. */
-const SPEED_MIN_TOKENS = 50
 const REFRESH_TOOLS = new Set(['Bash', 'Edit', 'Write', 'MultiEdit', 'NotebookEdit'])
 
 let settings: Settings = DEFAULT_SETTINGS
@@ -236,22 +234,21 @@ export const register: Register = on => {
     return result
   })
 
-  // Output speed counts from the response's first streamed chunk, not from the
-  // request: the wait before it is the prompt being read, not tokens being written.
-  // ponytail: responses under SPEED_MIN_TOKENS are left out; their few tokens
-  // over a few milliseconds read as thousands of t/s.
+  // Output speed counts from the response's first chunk, not from the request:
+  // the wait before it is the prompt being read. The text chunks themselves can
+  // arrive in one burst, so the first chunk of any kind is the start.
   on('turn.step', async function* ($, e, next) {
     const stream = next(e)
     let firstAt: number | null = null
     let r = await stream.next()
     while (!r.done) {
-      if (firstAt === null && r.value.kind !== 'engine') firstAt = await $.clock.now()
+      firstAt ??= await $.clock.now()
       yield r.value
       r = await stream.next()
     }
     const result = r.value
     if (result.usage) {
-      if (firstAt !== null && result.usage.output_tokens >= SPEED_MIN_TOKENS) {
+      if (firstAt !== null) {
         outTokens += result.usage.output_tokens
         streamMs += (await $.clock.now()) - firstAt
       }
