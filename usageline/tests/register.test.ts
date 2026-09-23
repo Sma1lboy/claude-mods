@@ -29,7 +29,10 @@ function world(on: On, settings: unknown = SETTINGS) {
   on('session.repo', () => ({ value: { root: '/w/rove', remote: null, internal: false, name: 'rove' } }))
   on('session.model', () => ({ value: 'claude-opus-5-5' }))
   on('session.usage', () => ({ value: { context: { window: 1_000_000, percent: 42, tokens: 180_600 }, rateLimits: [], cost: { ...cost } } }))
-  on('fs.read', () => ({ value: JSON.stringify(settings) }))
+  on('fs.read', ($, e) => {
+    if (e.path !== '/Users/me/.config/usageline/settings.json') throw new Error(`ENOENT ${e.path}`)
+    return { value: JSON.stringify(settings) }
+  })
   on('process.run', ($, e) => {
     const key = (e.argv as string[]).slice(2).join(' ')
     return { value: key in GIT ? { exitCode: 0, stdout: GIT[key]!, stderr: '' } : { exitCode: 1, stdout: '', stderr: '' } }
@@ -38,7 +41,7 @@ function world(on: On, settings: unknown = SETTINGS) {
   on('turn.start', ($, e) => ({ turnId: e.turnId }))
   on('turn.complete', ($, e) => ({ text: e.answer }))
   mock.store(on)
-  mock.env(on, { HOME: '/home/me' })
+  mock.env(on, { HOME: '/Users/me' })
   return { cost, clock: mock.clock(on, { now: Date.UTC(2026, 8, 23, 12) }) }
 }
 

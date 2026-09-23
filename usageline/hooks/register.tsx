@@ -18,7 +18,8 @@ let settings: Settings = DEFAULT_SETTINGS
 let book: Book = emptyBook()
 let project = ''
 let model = ''
-let ctxTokens: number | null = null
+/** 0 until the first response, as ccstatusline shows a fresh session. */
+let ctxTokens: number | null = 0
 let ctxPct: number | null = null
 /** cost.usd as last read: the baseline the next turn's delta is taken from. */
 let lastCost: number | null = null
@@ -188,9 +189,10 @@ export const register: Register = on => {
       book = emptyBook()
     }
     try {
-      const home = $.env.get('HOME')
+      const home = await $.env.get('HOME')
       settings = settingsOf(JSON.parse(await $.fs.read(`${home}/.config/usageline/settings.json`)))
-    } catch {
+    } catch (error) {
+      $.ui.log(`usageline: default layout, settings not read: ${error}`)
       settings = DEFAULT_SETTINGS
     }
     try {
@@ -232,13 +234,21 @@ export const register: Register = on => {
     return result
   })
 
+  // Output speed counts from the response's first streamed chunk, not from the
+  // request: the wait before it is the prompt being read, not tokens being written.
   on('turn.step', async function* ($, e, next) {
-    const t0 = await $.clock.now()
-    const result = yield* next(e)
-    const t1 = await $.clock.now()
+    const stream = next(e)
+    let firstAt: number | null = null
+    let r = await stream.next()
+    while (!r.done) {
+      if (firstAt === null && r.value.kind !== 'engine') firstAt = await $.clock.now()
+      yield r.value
+      r = await stream.next()
+    }
+    const result = r.value
     if (result.usage) {
       outTokens += result.usage.output_tokens
-      streamMs += t1 - t0
+      if (firstAt !== null) streamMs += (await $.clock.now()) - firstAt
       if (e.index === 0 && e.agentId === undefined) firstStep = result.usage
     }
     return result
