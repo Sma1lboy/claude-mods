@@ -1,0 +1,4 @@
+{
+  "description": "usageline: the line under the prompt and the /usage ledger",
+  "modules": ["./register.tsx"]
+}

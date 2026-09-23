@@ -1,0 +1,11 @@
+{
+  "name": "claude-mods",
+  "private": true,
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 claude plugin test usageline"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0"
+  }
+}

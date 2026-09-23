@@ -1,0 +1,11 @@
+{
+  "name": "claude-mods",
+  "owner": { "name": "sma1lboy" },
+  "plugins": [
+    {
+      "name": "usageline",
+      "source": "./usageline",
+      "description": "A status line under the prompt: context, cache hit rate, cache TTL countdown, today's spend for this project, and why a turn missed the cache. /usage prints the project ledger."
+    }
+  ]
+}
