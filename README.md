@@ -4,6 +4,9 @@ Mods for Claude Code: plugins built on function hooks, TypeScript running inside
 
 ## usageline
 
+> **Moved.** usageline now lives in a ccstatusline fork as its Claude Code mod: https://github.com/Sma1lboy/ccstatusline (install with `npx @sma1lboy/ccstatusline` → Install → Claude Code mod). This copy is kept for history.
+
+
 A status line drawn under the prompt by a mod, configured in [ccstatusline](https://github.com/sirmalloc/ccstatusline)'s own settings format, with its figures read from Claude Code instead of parsed out of the transcript.
 
 ```
