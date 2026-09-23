@@ -12,6 +12,8 @@ const TTL_MS = 5 * 60_000
 const TICK_MS = 5000
 /** How often custom-command widgets rerun their command. */
 const COMMAND_EVERY_MS = 30_000
+/** Output tokens a response needs before its speed counts. */
+const SPEED_MIN_TOKENS = 50
 const REFRESH_TOOLS = new Set(['Bash', 'Edit', 'Write', 'MultiEdit', 'NotebookEdit'])
 
 let settings: Settings = DEFAULT_SETTINGS
@@ -236,6 +238,8 @@ export const register: Register = on => {
 
   // Output speed counts from the response's first streamed chunk, not from the
   // request: the wait before it is the prompt being read, not tokens being written.
+  // ponytail: responses under SPEED_MIN_TOKENS are left out; their few tokens
+  // over a few milliseconds read as thousands of t/s.
   on('turn.step', async function* ($, e, next) {
     const stream = next(e)
     let firstAt: number | null = null
@@ -247,8 +251,10 @@ export const register: Register = on => {
     }
     const result = r.value
     if (result.usage) {
-      outTokens += result.usage.output_tokens
-      if (firstAt !== null) streamMs += (await $.clock.now()) - firstAt
+      if (firstAt !== null && result.usage.output_tokens >= SPEED_MIN_TOKENS) {
+        outTokens += result.usage.output_tokens
+        streamMs += (await $.clock.now()) - firstAt
+      }
       if (e.index === 0 && e.agentId === undefined) firstStep = result.usage
     }
     return result
@@ -307,6 +313,7 @@ export const register: Register = on => {
     const { Box, Text } = $.ui.resolve(e)
     return (
       <Box flexDirection="column">
+        {hint}
         {lines.map((segs, row) => (
           <Text key={`l${row}`} wrap="truncate-end">
             {segs.map((s, i) => (
@@ -316,7 +323,6 @@ export const register: Register = on => {
             ))}
           </Text>
         ))}
-        {hint}
       </Box>
     ) as RenderElement
   })

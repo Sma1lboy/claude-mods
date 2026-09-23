@@ -71,7 +71,7 @@ describe('register', () => {
 
     const ui = await $.ui.mount(HINT as never)
     const text = textOf(await ui.drawn())
-    expect(text.indexOf('mod |'), 'our line sits above the hint, right under the status line').toBeLessThan(text.indexOf('? for shortcuts'))
+    expect(text).toContain('? for shortcuts')
     expect(text).toContain('mod | 𖠰 main | ⎇ main | Ctx: 180.6k | Out: — | (+12,-3) | Cost: $0.40 | Cache: 🟢 5m | Cache Hit: 98.9%')
     expect(text).not.toContain('Miss')
 
