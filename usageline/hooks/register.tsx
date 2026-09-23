@@ -307,7 +307,6 @@ export const register: Register = on => {
     const { Box, Text } = $.ui.resolve(e)
     return (
       <Box flexDirection="column">
-        {hint}
         {lines.map((segs, row) => (
           <Text key={`l${row}`} wrap="truncate-end">
             {segs.map((s, i) => (
@@ -317,6 +316,7 @@ export const register: Register = on => {
             ))}
           </Text>
         ))}
+        {hint}
       </Box>
     ) as RenderElement
   })

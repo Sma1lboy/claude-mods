@@ -4,6 +4,16 @@ export default {
   "lines": [
     [
       {
+        "id": "ul-prefix",
+        "type": "custom-text",
+        "customText": "mod",
+        "color": "brightBlack"
+      },
+      {
+        "id": "ul-s0",
+        "type": "separator"
+      },
+      {
         "id": "eb4d773c-5ca3-4380-a270-45d5ac44fc5b",
         "type": "git-worktree"
       },
