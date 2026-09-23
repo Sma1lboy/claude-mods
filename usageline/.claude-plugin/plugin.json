@@ -1,6 +1,6 @@
 {
   "name": "usageline",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A status line under the prompt: context, cache hit rate, cache TTL countdown, today's spend for this project, and why a turn missed the cache. /usage prints the project ledger.",
   "author": { "name": "sma1lboy" }
 }
