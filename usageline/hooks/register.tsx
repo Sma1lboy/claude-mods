@@ -1,58 +1,141 @@
-import type { EngineInterface, Register, RenderElement, TurnCompleteInput } from 'claude-code'
+import type { EngineInterface, Register, RenderElement, TurnCompleteInput, TurnUsage } from 'claude-code'
 
-import {
-  addTurn,
-  bar,
-  bookOf,
-  ctxColor,
-  dayOf,
-  emptyBook,
-  fmtClock,
-  fmtPct,
-  fmtTokens,
-  fmtUsd,
-  hitColor,
-  hitRate,
-  missReason,
-  report,
-  shortModel,
-  sumDay,
-  totalsOf,
-  type Book,
-} from './ledger'
+import { DEFAULT_SETTINGS, settingsOf, type Settings } from './config'
+import { addTurn, bookOf, dayOf, emptyBook, missReason, report, sumDay, type Book } from './ledger'
+import { lineOf, type Git, type Seg, type Snapshot } from './widgets'
 
 const STORE_KEY = 'book'
 const COMMAND = 'usageline'
 // ponytail: assumes the 5-minute prompt cache; a 1-hour TTL setting is not read.
 const TTL_MS = 5 * 60_000
-/** Countdown under a minute turns the TTL segment from success to warning. */
-const TTL_WARN_MS = 60_000
+/** How often the line is recomputed; it redraws only when its text changed. */
+const TICK_MS = 5000
+/** How often custom-command widgets rerun their command. */
+const COMMAND_EVERY_MS = 30_000
+const REFRESH_TOOLS = new Set(['Bash', 'Edit', 'Write', 'MultiEdit', 'NotebookEdit'])
 
+let settings: Settings = DEFAULT_SETTINGS
 let book: Book = emptyBook()
 let project = ''
 let model = ''
+let ctxTokens: number | null = null
 let ctxPct: number | null = null
 /** cost.usd as last read: the baseline the next turn's delta is taken from. */
 let lastCost: number | null = null
+let outTokens = 0
+let streamMs = 0
+let working = false
 let turnStartMs: number | null = null
+/** The first request of the running main-loop turn: the one that meets the cache. */
+let firstStep: TurnUsage | null = null
 let prevEndMs: number | null = null
 let prevModel: string | null = null
 let compactedSince = false
-let last: { hit: number | null; miss: string | null; written: number } | null = null
+let turn: Snapshot['turn'] = null
+let miss: Snapshot['miss'] = null
+let git: Git | null = null
+let commands: Record<string, string> = {}
+let commandsAt = 0
+/** The text last drawn, so a tick redraws only on a change. */
+let drawnKey = ''
 /** Turns are recorded one at a time: two finishing together must not share a cost delta. */
 let recording: Promise<void> = Promise.resolve()
 
 async function readUsage($: EngineInterface): Promise<void> {
   try {
     const u = await $.session.usage()
-    ctxPct = u.context.percent ?? ctxPct
+    // Right after an interrupt the context figures are absent; keep the last ones.
+    if (u.context.tokens !== undefined) ctxTokens = u.context.tokens
+    if (u.context.percent !== undefined) ctxPct = u.context.percent
     if (u.cost) lastCost = u.cost.usd
   } catch {
     // the line keeps its previous figures
   }
 }
 
-function redraw($: EngineInterface): void {
+async function runGit($: EngineInterface, args: string[]): Promise<string | null> {
+  try {
+    const r = await $.process.run(['git', '--no-optional-locks', ...args], { timeoutMs: 3000 })
+    return r.exitCode === 0 ? r.stdout.trim() : null
+  } catch {
+    return null
+  }
+}
+
+function shortstat(out: string | null): [number, number] {
+  const ins = Number(out?.match(/(\d+) insertion/)?.[1] ?? 0)
+  const del = Number(out?.match(/(\d+) deletion/)?.[1] ?? 0)
+  return [ins, del]
+}
+
+/** Worktree name, branch and line counts, the way ccstatusline's git widgets read them. */
+async function readGit($: EngineInterface): Promise<void> {
+  const gitDir = await runGit($, ['rev-parse', '--git-dir'])
+  if (gitDir === null) {
+    git = null
+    return
+  }
+  const [branch, unstaged, staged] = await Promise.all([
+    runGit($, ['symbolic-ref', '--short', 'HEAD']),
+    runGit($, ['diff', '--shortstat']),
+    runGit($, ['diff', '--cached', '--shortstat']),
+  ])
+  const dir = gitDir.replace(/\\/g, '/')
+  const marker = dir.lastIndexOf('/worktrees/')
+  const worktree = dir.endsWith('.git') ? 'main' : marker === -1 ? null : dir.slice(marker + '/worktrees/'.length)
+  const [a, b] = shortstat(unstaged)
+  const [c, d] = shortstat(staged)
+  git = { worktree, branch, insertions: a + c, deletions: b + d }
+}
+
+async function readCommands($: EngineInterface, now: number): Promise<void> {
+  commandsAt = now
+  const items = settings.lines.flat().filter(w => w.type === 'custom-command' && w.commandPath)
+  const next: Record<string, string> = {}
+  await Promise.all(
+    items.map(async w => {
+      try {
+        const r = await $.process.run(['sh', '-c', w.commandPath!], { timeoutMs: w.timeout ?? 1000 })
+        // eslint-disable-next-line no-control-regex
+        const line = r.stdout.replace(/\x1b\[[0-9;]*m/g, '').trim().split('\n').at(-1) ?? ''
+        if (line) next[w.commandPath!] = line
+      } catch {
+        // a command that fails or times out draws nothing
+      }
+    }),
+  )
+  commands = next
+}
+
+function snapshot(now: number): Snapshot {
+  const today = sumDay(book, dayOf(now), project)
+  return {
+    model,
+    ctxTokens,
+    ctxPct,
+    sessionUsd: lastCost,
+    outTokens,
+    streamMs,
+    turn,
+    working,
+    cacheLeftMs: prevEndMs === null ? null : TTL_MS - (now - prevEndMs),
+    ttlMs: TTL_MS,
+    miss,
+    todayUsd: today.turns > 0 ? today.usd : null,
+    git,
+    commands,
+  }
+}
+
+function linesAt(now: number): Seg[][] {
+  const s = snapshot(now)
+  return settings.lines.map(items => lineOf(items, s, settings)).filter(l => l.length > 0)
+}
+
+/** Redraws when the line's text changed since the last drawing, and only then. */
+async function refresh($: EngineInterface): Promise<void> {
+  const key = JSON.stringify(linesAt(await $.clock.now()))
+  if (key === drawnKey) return
   try {
     $.ui.invalidate('ui.render')
   } catch {
@@ -76,50 +159,24 @@ async function record($: EngineInterface, e: TurnCompleteInput): Promise<void> {
   }
 
   if (e.agentId === undefined) {
-    last = {
-      hit: hitRate(totalsOf(u)),
-      miss: missReason(u, {
-        prevEndMs,
-        startMs: turnStartMs ?? now,
-        prevModel,
-        model: u.model,
-        compactedSince,
-        isSubagent: false,
-        ttlMs: TTL_MS,
-      }),
-      written: u.cache_creation_input_tokens,
-    }
+    turn = { input: u.input_tokens, read: u.cache_read_input_tokens, write: u.cache_creation_input_tokens }
+    const first = firstStep ?? u
+    const reason = missReason(first, {
+      prevEndMs,
+      startMs: turnStartMs ?? now,
+      prevModel,
+      model: u.model,
+      compactedSince,
+      isSubagent: false,
+      ttlMs: TTL_MS,
+    })
+    miss = reason ? { reason, written: first.cache_creation_input_tokens } : null
     prevEndMs = now
     prevModel = u.model
     model = u.model
     compactedSince = false
+    firstStep = null
   }
-  redraw($)
-}
-
-type Seg = { text: string; color?: string; dim?: boolean }
-
-function segments(now: number, working: boolean): Seg[] {
-  const segs: Seg[] = []
-  if (model) segs.push({ text: shortModel(model), color: 'claude' })
-  if (ctxPct !== null) segs.push({ text: `ctx ${bar(ctxPct / 100)} ${ctxPct}%`, color: ctxColor(ctxPct) })
-  if (last?.hit != null) segs.push({ text: `cache ${fmtPct(last.hit)}`, color: hitColor(last.hit) })
-  if (working) segs.push({ text: '● hot', color: 'success' })
-  else if (prevEndMs !== null) {
-    const left = TTL_MS - (now - prevEndMs)
-    segs.push(
-      left > 0
-        ? { text: `● hot ${fmtClock(left)}`, color: left < TTL_WARN_MS ? 'warning' : 'success' }
-        : { text: '○ cold', dim: true },
-    )
-  }
-  const today = sumDay(book, dayOf(now), project)
-  if (today.turns > 0) {
-    const name = project.split('/').at(-1) ?? project
-    segs.push({ text: `today ${fmtUsd(today.usd)} · ${name}` })
-  }
-  if (last?.miss) segs.push({ text: `⚠ miss: ${last.miss}, +${fmtTokens(last.written)} rewritten`, color: 'warning' })
-  return segs
 }
 
 export const register: Register = on => {
@@ -131,6 +188,12 @@ export const register: Register = on => {
       book = emptyBook()
     }
     try {
+      const home = $.env.get('HOME')
+      settings = settingsOf(JSON.parse(await $.fs.read(`${home}/.config/usageline/settings.json`)))
+    } catch {
+      settings = DEFAULT_SETTINGS
+    }
+    try {
       project = (await $.session.repo())?.root ?? (await $.session.root())
     } catch {
       project = e.cwd
@@ -140,32 +203,65 @@ export const register: Register = on => {
     } catch {
       // filled in by the first turn
     }
-    await readUsage($)
+    const now = await $.clock.now()
+    await Promise.all([readUsage($), readGit($), readCommands($, now)])
     try {
       await $.command.register({ name: COMMAND, description: 'This project’s token and cost ledger, by day' })
     } catch (error) {
       $.ui.log(`usageline: /${COMMAND} not registered: ${error}`)
     }
-    // The TTL countdown ticks while the cache is warm; the line holds still otherwise.
-    $.clock.every(1000, () => {
-      void $.clock.now().then(now => {
-        if (prevEndMs !== null && now - prevEndMs < TTL_MS + 2000) redraw($)
-      })
+    $.clock.every(TICK_MS, () => {
+      void (async () => {
+        const at = await $.clock.now()
+        if (at - commandsAt >= COMMAND_EVERY_MS) await readCommands($, at)
+        await refresh($)
+      })()
     })
     // The hint may have drawn before this start finished.
-    redraw($)
+    drawnKey = ''
+    await refresh($)
     return result
   })
 
   on('turn.start', async ($, e, next) => {
     turnStartMs = await $.clock.now()
-    return next(e)
+    firstStep = null
+    working = true
+    const result = await next(e)
+    await refresh($)
+    return result
+  })
+
+  on('turn.step', async function* ($, e, next) {
+    const t0 = await $.clock.now()
+    const result = yield* next(e)
+    const t1 = await $.clock.now()
+    if (result.usage) {
+      outTokens += result.usage.output_tokens
+      streamMs += t1 - t0
+      if (e.index === 0 && e.agentId === undefined) firstStep = result.usage
+    }
+    return result
   })
 
   on('turn.complete', async ($, e, next) => {
     const result = await next(e)
     recording = recording.then(() => record($, e)).catch(() => undefined)
     await recording
+    if (e.agentId === undefined) {
+      working = false
+      await readGit($)
+    }
+    await refresh($)
+    return result
+  })
+
+  on('tool.call', async ($, e, next) => {
+    const result = await next(e)
+    if (e.agentId === undefined && REFRESH_TOOLS.has(e.tool)) {
+      await readGit($)
+      await refresh($)
+    }
     return result
   })
 
@@ -180,9 +276,10 @@ export const register: Register = on => {
     on('command.run', { command }, async ($, e, next) => {
       const result = await next(e)
       prevEndMs = null
-      last = null
+      turn = null
+      miss = null
       compactedSince = false
-      redraw($)
+      await refresh($)
       return result
     })
   }
@@ -194,23 +291,22 @@ export const register: Register = on => {
 
   on('ui.render', { component: 'PromptHint' }, async ($, e, next) => {
     const hint = await next(e)
-    const now = await $.clock.now()
-    const segs = segments(now, e.props.isWorking)
-    if (segs.length === 0) return hint
+    const lines = linesAt(await $.clock.now())
+    drawnKey = JSON.stringify(lines)
+    if (lines.length === 0) return hint
     const { Box, Text } = $.ui.resolve(e)
     return (
       <Box flexDirection="column">
         {hint}
-        <Text wrap="truncate-end">
-          {segs.map((s, i) => (
-            <Text key={String(i)}>
-              {i > 0 ? <Text dimColor>{' │ '}</Text> : null}
-              <Text color={s.color} dimColor={s.dim}>
+        {lines.map((segs, row) => (
+          <Text key={`l${row}`} wrap="truncate-end">
+            {segs.map((s, i) => (
+              <Text key={String(i)} color={s.color} backgroundColor={s.backgroundColor} bold={s.bold}>
                 {s.text}
               </Text>
-            </Text>
-          ))}
-        </Text>
+            ))}
+          </Text>
+        ))}
       </Box>
     ) as RenderElement
   })

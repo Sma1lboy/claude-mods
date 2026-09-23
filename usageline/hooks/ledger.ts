@@ -78,15 +78,6 @@ export function hitRate(t: { inTok: number; cacheRead: number; cacheWrite: numbe
   return sent === 0 ? null : t.cacheRead / sent
 }
 
-export const totalsOf = (u: TurnTokens): Totals => ({
-  inTok: u.input_tokens,
-  outTok: u.output_tokens,
-  cacheRead: u.cache_read_input_tokens,
-  cacheWrite: u.cache_creation_input_tokens,
-  usd: 0,
-  turns: 1,
-})
-
 export type MissContext = {
   /** End of the previous main-loop turn, or null on the session's first. */
   prevEndMs: number | null
@@ -150,22 +141,11 @@ export function fmtDuration(ms: number): string {
   return `${Math.floor(m / 60)}h${String(m % 60).padStart(2, '0')}`
 }
 
-export function fmtClock(ms: number): string {
-  const s = Math.max(0, Math.ceil(ms / 1000))
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
-}
-
 /** An 8-cell bar, like ccstatusline's short context bar. */
 export function bar(ratio: number, cells = 8): string {
   const filled = Math.round(Math.min(1, Math.max(0, ratio)) * cells)
   return '█'.repeat(filled) + '░'.repeat(cells - filled)
 }
-
-/** success / warning / error by how much of the prompt came from the cache. */
-export const hitColor = (r: number): string => (r >= 0.8 ? 'success' : r >= 0.5 ? 'warning' : 'error')
-
-/** success / warning / error by how full the context window is. */
-export const ctxColor = (pct: number): string => (pct < 60 ? 'success' : pct < 85 ? 'warning' : 'error')
 
 /** The /usageline report: this project's last `days` days, then every project today. */
 export function report(book: Book, project: string, today: string, days = 7): string {
