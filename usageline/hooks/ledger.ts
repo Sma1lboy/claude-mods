@@ -167,7 +167,7 @@ export const hitColor = (r: number): string => (r >= 0.8 ? 'success' : r >= 0.5 
 /** success / warning / error by how full the context window is. */
 export const ctxColor = (pct: number): string => (pct < 60 ? 'success' : pct < 85 ? 'warning' : 'error')
 
-/** The /usage report: this project's last `days` days, then every project today. */
+/** The /usageline report: this project's last `days` days, then every project today. */
 export function report(book: Book, project: string, today: string, days = 7): string {
   const head = ['day', 'turns', 'input', 'output', 'cache r', 'cache w', 'hit', 'cost']
   const rowOf = (label: string, t: Totals) => [
@@ -202,10 +202,10 @@ export function report(book: Book, project: string, today: string, days = 7): st
     })
     .sort((a, b) => b[1].usd - a[1].usd)
 
-  const table = (h: string[], rows: string[][]) => {
-    const w = h.map((_, i) => Math.max(h[i]!.length, ...rows.map(r => r[i]!.length)))
+  const table = (head: string[], rows: string[][]) => {
+    const w = head.map((_, i) => Math.max(head[i]!.length, ...rows.map(r => r[i]!.length)))
     const line = (r: string[]) => r.map((c, i) => (i === 0 ? c.padEnd(w[i]!) : c.padStart(w[i]!))).join('  ')
-    return [line(h), ...rows.map(line)].join('\n')
+    return [line(head), ...rows.map(line)].join('\n')
   }
 
   const out = [`${project}`, '']
