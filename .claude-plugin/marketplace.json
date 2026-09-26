@@ -1,6 +1,7 @@
 {
   "name": "claude-mods",
   "owner": { "name": "sma1lboy" },
+  "metadata": { "description": "Mods for Claude Code, plugins built on function hooks" },
   "plugins": [
     {
       "name": "usageline",

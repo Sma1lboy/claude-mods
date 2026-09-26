@@ -88,7 +88,7 @@ describe('register', () => {
     world(on, null)
     await $.session.start({ surface: 'terminal', isInteractive: true, cwd: '/w/rove' })
     const ui = await $.ui.mount(HINT as never)
-    expect(textOf(await ui.drawn())).toContain('opus 5.5 | Ctx: ███░░░░░ 42%')
+    expect(textOf(await ui.drawn())).toContain('mod | 𖠰 main | ⎇ main | Ctx: ')
   })
 
   test('/usageline prints the ledger', async ($, on) => {

@@ -22,20 +22,28 @@ export type Settings = {
   globalBold?: boolean
 }
 
-/** What usageline draws with no settings file: a line about the cache. */
+/** What usageline draws with no settings file: the layout in settings.example.json. */
 export const DEFAULT_SETTINGS: Settings = {
   colorLevel: 2,
   lines: [
     [
-      { type: 'model', rawValue: true, color: 'brightMagenta' },
+      { type: 'custom-text', customText: 'mod', color: 'brightBlack' },
       { type: 'separator' },
-      { type: 'context-bar', color: 'brightBlack' },
+      { type: 'git-worktree' },
       { type: 'separator' },
-      { type: 'cache-hit-rate', color: 'green' },
+      { type: 'git-branch', color: 'magenta' },
+      { type: 'separator' },
+      { type: 'context-length', color: 'brightBlack' },
+      { type: 'separator' },
+      { type: 'output-speed', color: 'cyan' },
+      { type: 'separator' },
+      { type: 'git-changes', color: 'yellow' },
+      { type: 'separator' },
+      { type: 'session-cost', color: 'green' },
       { type: 'separator' },
       { type: 'cache-timer', color: 'brightCyan' },
       { type: 'separator' },
-      { type: 'usageline-today', color: 'green' },
+      { type: 'cache-hit-rate', color: 'green' },
       { type: 'separator' },
       { type: 'usageline-cache-miss', color: 'yellow' },
     ],

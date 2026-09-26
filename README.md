@@ -2,20 +2,33 @@
 
 Mods for Claude Code: plugins built on function hooks, TypeScript running inside Claude Code.
 
+## Install
+
+Paste into a terminal, then restart Claude Code:
+
+```sh
+node -e 'const fs=require("fs"),f=require("os").homedir()+"/.claude/settings.json";const s=fs.existsSync(f)?JSON.parse(fs.readFileSync(f,"utf8")):{};s.env={...s.env,CLAUDE_CODE_ENABLE_FUNCTION_HOOKS:"1"};fs.writeFileSync(f,JSON.stringify(s,null,2)+"\n")'
+claude plugin marketplace add sma1lboy/claude-mods
+claude plugin install usageline@claude-mods
+```
+
+The first line sets `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1` in `~/.claude/settings.json`; mods are early access and load only with it on. To update later:
+
+```sh
+claude plugin marketplace update claude-mods && claude plugin update usageline@claude-mods
+```
+
 ## usageline
-
-> **Moved.** usageline now lives in a ccstatusline fork as its Claude Code mod: https://github.com/Sma1lboy/ccstatusline (install with `npx @sma1lboy/ccstatusline` → Install → Claude Code mod). This copy is kept for history.
-
 
 A status line drawn under the prompt by a mod, configured in [ccstatusline](https://github.com/sirmalloc/ccstatusline)'s own settings format, with its figures read from Claude Code instead of parsed out of the transcript.
 
 ```
-𖠰 main | ⎇ main | Ctx: 181.1k | Out: 129.0 t/s | (+22,-9) | Cost: $0.51 | Cache: 🟢 4m | Cache Hit: 90.7% | Miss: idle 5m20s > 5m ttl, +181k rewritten
+mod | 𖠰 main | ⎇ main | Ctx: 181.1k | Out: 129.0 t/s | (+22,-9) | Cost: $0.51 | Cache: 🟢 4m | Cache Hit: 90.7% | Miss: idle 5m20s > 5m ttl, +181k rewritten
 ```
 
 ### Settings
 
-`~/.config/usageline/settings.json` takes the same JSON as `~/.config/ccstatusline/settings.json`: `lines` of widgets, each with `type`, `color`, `backgroundColor`, `bold`, `rawValue`, plus `colorLevel` and `defaultSeparator`. Copy your ccstatusline file there to keep your layout. [`usageline/settings.example.json`](usageline/settings.example.json) is a ccstatusline layout with cost and cache appended. With no file, a default line about the cache is drawn.
+`~/.config/usageline/settings.json` takes the same JSON as `~/.config/ccstatusline/settings.json`: `lines` of widgets, each with `type`, `color`, `backgroundColor`, `bold`, `rawValue`, plus `colorLevel` and `defaultSeparator`. Copy your ccstatusline file there to keep your layout. [`usageline/settings.example.json`](usageline/settings.example.json) is a ccstatusline layout with cost and cache appended. With no file, the layout in `settings.example.json` is drawn, so a fresh install needs no settings.
 
 | Widget | Where the figure comes from |
 | --- | --- |
@@ -35,21 +48,6 @@ Powerline, flex modes and ccstatusline's other widgets are not drawn yet; an unk
 `/usageline` prints the ledger: this project's last seven days, then every project today.
 
 Cost is Claude Code's own estimate, the `/cost` figure; on a subscription it is what the tokens would cost at API prices, and through a gateway the real charge is the gateway's.
-
-### Install
-
-Mods are early access and only load with function hooks switched on. Add this to `~/.claude/settings.json`:
-
-```json
-{ "env": { "CLAUDE_CODE_ENABLE_FUNCTION_HOOKS": "1" } }
-```
-
-Then:
-
-```
-claude plugin marketplace add sma1lboy/claude-mods
-claude plugin install usageline@claude-mods
-```
 
 To run it from a checkout: `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 claude --plugin-dir usageline`.
 
