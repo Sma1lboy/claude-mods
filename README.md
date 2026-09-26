@@ -4,7 +4,20 @@ Mods for Claude Code: plugins built on function hooks, TypeScript running inside
 
 ## Install
 
-Paste into a terminal, then restart Claude Code:
+Paste this into Claude Code:
+
+```text
+Install claude-mods (https://github.com/Sma1lboy/claude-mods) for me:
+1. Add a global alias so every `claude` starts with function hooks on: in my shell's startup file (~/.zshrc for zsh, ~/.bashrc for bash, ~/.config/fish/config.fish for fish), add
+   alias claude='CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 claude'
+   If a `claude` alias is already there, add CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 to it instead of adding a second one. If it already sets the variable, leave the file alone.
+2. Run:
+   claude plugin marketplace add sma1lboy/claude-mods
+   claude plugin install usageline@claude-mods
+3. Tell me which file you changed, and to open a new terminal and start claude again.
+```
+
+Or by hand, in a terminal, then restart Claude Code:
 
 ```sh
 node -e 'const fs=require("fs"),f=require("os").homedir()+"/.claude/settings.json";const s=fs.existsSync(f)?JSON.parse(fs.readFileSync(f,"utf8")):{};s.env={...s.env,CLAUDE_CODE_ENABLE_FUNCTION_HOOKS:"1"};fs.writeFileSync(f,JSON.stringify(s,null,2)+"\n")'
