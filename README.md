@@ -70,12 +70,24 @@ To run it from a checkout: `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 claude --plugin-
 - The cache timer reads in whole minutes: on 2.1.280 every redraw of the line under the prompt flashes one frame, so it redraws only when its text changes.
 - It records turns from when it is installed; older history is not imported.
 
+## goal
+
+Gives the model a tool, `mcp__goal__goal`, that runs Claude Code's own `/goal`. The model can then set a goal itself, the same as you typing `/goal <condition>`: after each turn a separate check decides whether the condition is met, and Claude keeps working until it is. `args` takes a condition, `clear`, or nothing for the status.
+
+```sh
+claude plugin install goal@claude-mods
+```
+
+A plugin can't run a slash command while a tool call holds the turn, so the tool queues the command and `/goal` runs when the turn ends. If you interrupt that turn, the queued command is dropped. So a `clear` from the model lands late: while a goal is active, the goal check keeps that turn going until the goal is met or the check gives up, and only then does the clear run. To stop a goal at once, type `/goal clear` yourself. Two calls in one turn: the later one wins. Calls from subagents are refused. Unlike the built-in `ProposeGoal`, the tool doesn't go through the approval dialog that the `modelProposedGoals` setting controls; installing it means the model can set a goal without asking. `/goal` itself needs a trusted workspace and hooks that aren't disabled.
+
+To run it from a checkout: `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 claude --plugin-dir goal`.
+
 ## Development
 
 ```
 npm install
 npm run typecheck   # tsc over every mod
-npm test            # claude plugin test usageline
+npm test            # claude plugin test, for each mod
 ```
 
 `types/claude-code.d.ts` comes from `/plugin-types` in Claude Code and is not committed; regenerate it after an update.

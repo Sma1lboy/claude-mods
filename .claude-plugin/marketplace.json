@@ -7,6 +7,11 @@
       "name": "usageline",
       "source": "./usageline",
       "description": "A status line under the prompt: context, cache hit rate, cache TTL countdown, today's spend for this project, and why a turn missed the cache. /usage prints the project ledger."
+    },
+    {
+      "name": "goal",
+      "source": "./goal",
+      "description": "Gives the model a goal tool that runs the built-in /goal: set a condition Claude keeps working toward, check it, or clear it."
     }
   ]
 }
