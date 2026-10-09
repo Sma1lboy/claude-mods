@@ -81,3 +81,23 @@ SYNC  61%  ███████████████████████
 - 根目录 `npm run typecheck` 仍失败于未改动的 `usageline/tests/register.test.ts`：usage mock 缺 `startedAt`，process mock 缺 `isStdoutTruncated` / `isStderrTruncated`。保留范围限制，不修改其他 mod。
 - 再次读取应用版本与本地内置引擎目录，仍为 Desktop **1.24012.9** / CCD **2.1.219**。没有重启应用、开调试端口或尝试注入。
 - 待兼容 Desktop 环境实测：安装后实际渲染、输入/发送/侧栏/设置/弹窗/artifact、系统深浅与减少动态的沙箱继承、帧率、禁用或卸载后的还原，以及真实截图和 15–20 秒录屏。当前证据不能代替这些验收。终端没有 OS 减少动态信号，使用 `/skin still`；跳过键需聚焦启动区域。
+
+## 官方安装 / 卸载流程复验
+
+在独立临时 git 项目和独立 `CLAUDE_CONFIG_DIR` 中，用 2.1.284 执行了官方命令；没有读取或修改用户现有插件配置。为验证尚未合并的分支，marketplace 来源使用本 worktree，而不是远程 main。
+
+```sh
+# 在独立临时目录创建 project/ 和 config/，git init project。
+# 后续命令均在 project/ 中执行，CLAUDE_CONFIG_DIR 指向 config/。
+export CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1
+claude plugin marketplace add /absolute/path/to/this/worktree
+claude plugin install desktop-skin@claude-mods --scope project --json
+claude plugin list --json
+claude plugin test <上一步返回的 installPath>
+claude plugin uninstall desktop-skin@claude-mods --scope project --json
+claude plugin list --json
+```
+
+实际结果：安装返回 `outcome: ok`，列表中版本为 `0.1.0`、`enabled: true`、`scope: project`；直接测试安装缓存中的插件，11 项全部通过。卸载返回 `outcome: ok`、`keptData: false`，最终插件列表为 `[]`，临时项目的 `enabledPlugins` 为 `{}`。全部命令退出码为 0。
+
+这证明官方 CLI 的本地 marketplace 安装、安装后模块测试和配置卸载流程可用；不是运行中的 Claude Desktop 加载或画面还原证据。PR 当前没有配置 CI 检查，不能称为 CI 绿。
