@@ -72,11 +72,11 @@ function defs(): string {
 </defs>`
 }
 
-function open(viewW: number, viewH: number, appearance: Appearance, css: string, label: string): string {
+function open(viewW: number, viewH: number, appearance: Appearance, css: string, label: string, still = false): string {
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${viewW} ${viewH}" width="${viewW}" height="${viewH}" ` +
     `class="a-${appearance}" role="img" aria-label="${esc(label)}">` +
-    `<style>${paletteCss()}${BASE_CSS}${css}${REDUCE_CSS}</style>${defs()}`
+    `<style>${paletteCss()}${BASE_CSS}${css}${REDUCE_CSS}${still ? 'svg *{animation:none!important}' : ''}</style>${defs()}`
   )
 }
 
@@ -177,7 +177,7 @@ const STRIP_CSS = `.grow{animation:grow 1.2s cubic-bezier(.2,.8,.2,1) .4s both}@
  * BOLT peeking up from the bottom edge with its bubble, the name block, and
  * the telemetry strip.
  */
-export function hudSvg(r: Readings, lines: string[], appearance: Appearance): string {
+export function hudSvg(r: Readings, lines: string[], appearance: Appearance, still = false): string {
   const W = 960
   const H = 132
   const b = bubble(lines, 150, 16, 420, 62, 15)
@@ -190,7 +190,7 @@ export function hudSvg(r: Readings, lines: string[], appearance: Appearance): st
   ].join('')
   const where = placeOf(r)
   return (
-    open(W, H, appearance, css, `${THEME.name} HUD: ${lines.join(' / ')}`) +
+    open(W, H, appearance, css, `${THEME.name} HUD: ${lines.join(' / ')}`, still) +
     `<rect x="1" y="1" width="${W - 2}" height="${H - 2}" rx="16" fill="var(--panel)" stroke="var(--line)" stroke-width="1.5"/>` +
     `<clipPath id="band"><rect x="1" y="1" width="${W - 2}" height="${H - 2}" rx="16"/></clipPath>` +
     `<g clip-path="url(#band)">` +
@@ -211,13 +211,13 @@ export function hudSvg(r: Readings, lines: string[], appearance: Appearance): st
 }
 
 /** The pane's card: BOLT large on a hex field, with its bubble and the strip. */
-export function cardSvg(r: Readings, lines: string[], appearance: Appearance): string {
+export function cardSvg(r: Readings, lines: string[], appearance: Appearance, still = false): string {
   const W = 640
   const H = 300
   const b = bubble(lines, 230, 40, 380, 72, 16)
   const css = [boltCss(0), b.css, STRIP_CSS].join('')
   return (
-    open(W, H, appearance, css, `${THEME.mascot}: ${lines.join(' / ')}`) +
+    open(W, H, appearance, css, `${THEME.mascot}: ${lines.join(' / ')}`, still) +
     `<rect width="${W}" height="${H}" rx="18" fill="var(--bg)"/>` +
     `<rect width="${W}" height="${H}" rx="18" fill="url(#hex)" opacity=".8"/>` +
     `<rect x="0" y="0" width="${W}" height="8" fill="url(#stripes)"/>` +
@@ -256,7 +256,7 @@ function odometer(x: number, y: number, size: number, turns: number, to: number,
  * complete. The welcome names the real project and model; nothing else in it
  * stands for a session figure.
  */
-export function bootSvg(r: Pick<Readings, 'project' | 'model'>, appearance: Appearance): string {
+export function bootSvg(r: Pick<Readings, 'project' | 'model'>, appearance: Appearance, still = false): string {
   const W = 960
   const H = 320
   const T = THEME.bootMs
@@ -309,7 +309,7 @@ export function bootSvg(r: Pick<Readings, 'project' | 'model'>, appearance: Appe
     `M${x - r} ${y} L${x - r / 2} ${y - r * 0.87} L${x + r / 2} ${y - r * 0.87} L${x + r} ${y} L${x + r / 2} ${y + r * 0.87} L${x - r / 2} ${y + r * 0.87} Z`
 
   return (
-    open(W, H, appearance, css, `${THEME.name} boot: ${phases.map(p => p.zh).join(' → ')}`) +
+    open(W, H, appearance, css, `${THEME.name} boot: ${phases.map(p => p.zh).join(' → ')}`, still) +
     `<clipPath id="odo"><rect x="0" y="${-size}" width="${size * 2}" height="${lh}"/></clipPath>` +
     `<clipPath id="stage"><rect x="0" y="0" width="${W}" height="${H}" rx="18"/></clipPath>` +
     `<g clip-path="url(#stage)">` +

@@ -107,6 +107,8 @@ claude plugin install desktop-skin@claude-mods
 
 The desktop drawing needs a Claude Desktop whose bundled Claude Code has function hooks; Desktop 1.24012.9 bundles 2.1.219, which does not. What the API can and cannot skin, and why there is no wallpaper or sidebar restyle, is in [desktop-skin/docs/capabilities.md](desktop-skin/docs/capabilities.md).
 
+These images and `desktop-skin/docs/boot.mp4` are Chromium renders of the mod SVG, **not Claude Desktop captures**. Live Desktop rendering and uninstall/restore verification remain pending. Tested with Claude Code **2.1.284**; older function-hook APIs (including 2.1.271) are incompatible.
+
 ![boot complete](desktop-skin/docs/boot-4-complete.png)
 ![HUD dark](desktop-skin/docs/hud-dark.png)
 ![HUD light](desktop-skin/docs/hud-light.png)

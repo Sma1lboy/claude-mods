@@ -8,7 +8,7 @@ Desktop 的 Code 标签不调用系统里的 `claude`，它跑的是自己固定
 
 这一版还没有 function hooks。在它的二进制里搜 `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS`、`ui_render`、`ui_client_module`、`AbovePrompt`，一个都搜不到；`/plugin-types` 也报 `Unknown command`。2.1.284 里这几个字符串都在。
 
-所以下面"能做"一栏的东西都写好了，也测过（`$.ui.mount({ surface: 'desktop' })` 和真实的终端会话），但要等 Desktop 把内置的 Claude Code 升到带 function hooks 的版本，才能在 Desktop 里真正显示出来。Desktop 支持用环境变量 `CLAUDE_CODE_LOCAL_BINARY` 指向别的 CLI，但这得重启 Claude.app。owner 说过不重启，所以没有试。
+所以下面"能做"一栏的东西都写好了，也测过（`$.ui.mount({ surface: 'desktop' })` 和真实的终端会话），但要等 Desktop 把内置的 Claude Code 升到带 function hooks 的版本，才有机会在 Desktop 里显示出来；新版内置引擎与 Desktop 前端是否真正支持这些 render tree，仍须实机验证，不能由类型和 mount 测试推定。Desktop 支持用环境变量 `CLAUDE_CODE_LOCAL_BINARY` 指向别的 CLI，但这得重启 Claude.app。owner 说过不重启，所以没有试。
 
 ## 能做
 
@@ -26,7 +26,7 @@ Desktop 的 Code 标签不调用系统里的 `claude`，它跑的是自己固定
 | 计时器 | 仪式放完自动切到 HUD | `$.clock.after` 3183 |
 | 重画 | 一轮结束后刷新数字；每秒最多 10 次 | `$.ui.invalidate` 2169 |
 | `Client`（surface module）：插件自己的模块在绘制线程上画一块区域，带帧时钟、键盘、指针和 `post` | 终端版启动仪式用它画字符动画，放完 `post({done})`，按任意键 `post({skip})` | `ClientModule` 1261，`ClientSurface` 1371–1426，`ui.message` 3694 |
-| 测试工具：`$.ui.mount` 指定 surface；`advance`、`key`、`resize`、`select`、`press` | `tests/register.test.tsx` 的 10 个测试 | `EngineMount` 13314，`Mounted` 13795–13940 |
+| 测试工具：`$.ui.mount` 指定 surface；`advance`、`key`、`resize`、`select`、`press` | `tests/register.test.tsx` 的 11 个测试 | `EngineMount` 13314，`Mounted` 13795–13940 |
 
 ## 做不到（交给 owner 决定）
 
@@ -72,3 +72,12 @@ SYNC  61%  ███████████████████████
 ## docs 里的图是怎么来的
 
 `boot-*.png`、`hud-*.png`、`pane-card-*.png`、`boot-reduced-motion.png` 和 `boot.mp4` 都来自同一份 SVG：就是 mod 交给 desktop `Svg` 元素的那份（`hooks/art.ts`），在无头 Chromium 里渲染后截的图和录屏。它们不是 Claude Desktop 的截图，原因见本页开头。
+
+## 交接复验（2026-10-09）
+
+- 使用本机 `/Users/jacksonc/.nvm/versions/node/v22.23.2/bin/claude`，版本 **2.1.284**。PATH 默认的 `/opt/homebrew/bin/claude` 是 **2.1.271**，会报 `session.root is not an event` / `$.ui.mount is not a function`；不要把旧运行时的失败当成相同版本回归。
+- `PATH=/Users/jacksonc/.nvm/versions/node/v22.23.2/bin:$PATH npm test`：21 项通过（usageline 9、goal 1、desktop-skin 11）。新增测试先复现手动停止动画无效，再验证启动、HUD、pane 全部停动及恢复。
+- `npx tsc -p desktop-skin/tsconfig.json`、2.1.284 的 `claude plugin validate desktop-skin` 和 `claude plugin validate .` 均通过。
+- 根目录 `npm run typecheck` 仍失败于未改动的 `usageline/tests/register.test.ts`：usage mock 缺 `startedAt`，process mock 缺 `isStdoutTruncated` / `isStderrTruncated`。保留范围限制，不修改其他 mod。
+- 再次读取应用版本与本地内置引擎目录，仍为 Desktop **1.24012.9** / CCD **2.1.219**。没有重启应用、开调试端口或尝试注入。
+- 待兼容 Desktop 环境实测：安装后实际渲染、输入/发送/侧栏/设置/弹窗/artifact、系统深浅与减少动态的沙箱继承、帧率、禁用或卸载后的还原，以及真实截图和 15–20 秒录屏。当前证据不能代替这些验收。终端没有 OS 减少动态信号，使用 `/skin still`；跳过键需聚焦启动区域。

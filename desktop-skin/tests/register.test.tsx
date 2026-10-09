@@ -58,6 +58,23 @@ const band = <P extends 'desktop' | 'terminal'>($: Engine, surface: P) =>
   $.ui.mount({ ...BAND, surface } as unknown as MountTarget<P, 'AbovePrompt'>)
 
 describe('desktop', () => {
+  test('manual still mode disables SVG animation in the boot, HUD and pane', async ($, on) => {
+    const { clock } = world(on, FULL, { prefs: { still: true } })
+    await $.session.start({ surface: null, isInteractive: false, cwd: '/w/claude-mods' })
+    const ui = await band($, 'desktop')
+    expect(await drawn(ui)).toContain('svg *{animation:none!important}')
+    await clock.advance(BOOT_MS)
+    expect(await drawn(ui)).toContain('svg *{animation:none!important}')
+    const pane = await $.ui.mount({
+      plugin: 'desktop-skin', surface: 'desktop', component: 'Pane', requestId: 'scarlet-link',
+      props: { title: 'SCARLET LINK', isFocused: true, bodyColumns: 100, placement: 'dock', scroll: { offset: 0, bodyRows: 30, totalRows: 0 }, view: {} },
+    } as unknown as MountTarget<'desktop', 'Pane'>)
+    expect(await drawn(pane)).toContain('svg *{animation:none!important}')
+    await pane.press({ key: 'motion' })
+    expect(await drawn(pane)).not.toContain('svg *{animation:none!important}')
+    expect(await drawn(ui)).not.toContain('svg *{animation:none!important}')
+  })
+
   test('the first band is the boot ceremony, then the HUD once it has played', async ($, on) => {
     const { clock } = world(on)
     await $.session.start({ surface: null, isInteractive: false, cwd: '/w/claude-mods' })

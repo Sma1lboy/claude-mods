@@ -207,7 +207,7 @@ export const register: Register = on => {
       if (booting) {
         return (
           <Box flexDirection="column" gap={1}>
-            <Svg source={bootSvg(readings, prefs.appearance)} alt={`${THEME.name} 启动仪式`} isInteractive />
+            <Svg source={bootSvg(readings, prefs.appearance, prefs.still)} alt={`${THEME.name} 启动仪式`} isInteractive />
             <Box flexDirection="row" justifyContent="flex-end">
               <Button key="skip" label="跳过 SKIP" dimColor onPress={() => finishBoot($)} />
             </Box>
@@ -216,7 +216,7 @@ export const register: Register = on => {
       }
       const lines = bubbleOf(readings)
       return (
-        <Svg source={hudSvg(readings, lines, prefs.appearance)} alt={`${THEME.name}: ${lines.join(' / ')}`} isInteractive />
+        <Svg source={hudSvg(readings, lines, prefs.appearance, prefs.still)} alt={`${THEME.name}: ${lines.join(' / ')}`} isInteractive />
       ) as RenderElement
     }
     if (e.surface === 'terminal') {
@@ -342,7 +342,7 @@ export const register: Register = on => {
     const { Svg } = $.ui.resolve(e)
     return (
       <Box flexDirection="column" gap={1}>
-        <Svg source={cardSvg(readings, lines, prefs.appearance)} alt={`${THEME.mascot}: ${lines.join(' / ')}`} isInteractive />
+        <Svg source={cardSvg(readings, lines, prefs.appearance, prefs.still)} alt={`${THEME.mascot}: ${lines.join(' / ')}`} isInteractive />
         {controls}
       </Box>
     ) as RenderElement
