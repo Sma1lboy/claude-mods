@@ -91,3 +91,22 @@ npm test            # claude plugin test, for each mod
 ```
 
 `types/claude-code.d.ts` comes from `/plugin-types` in Claude Code and is not committed; regenerate it after an update.
+
+## desktop-skin
+
+SCARLET LINK, a cockpit HUD skin drawn through the mod API's render sites, on the Claude Code Desktop surface and the terminal. Red and orange with black and amber, hex grids, warning stripes, monospace step codes.
+
+- **Boot ceremony**, the first time the band above the prompt draws: capsule docking → neural link → sync rate rising → boot complete, about 9 seconds. It can be skipped and plays once; `/skin boot` replays it. Under reduced motion it shows its last frame.
+- **HUD band** after it: BOLT, an original helmet robot, peeks up with a speech bubble that reads out the session's real figures (context used, cost, 5-hour and 7-day limits, turns), quips when it has none, and a telemetry strip. A figure the engine does not give is drawn as `—`.
+- **Spinner words** themed on the terminal; on the desktop only the bare `Working` is replaced, step descriptions stay.
+- `/skin` opens the pane: BOLT large, appearance (auto, dark, light), replay, hide, stop motion. `/skin on|off|dark|light|auto|still|motion` sets them directly.
+
+```sh
+claude plugin install desktop-skin@claude-mods
+```
+
+The desktop drawing needs a Claude Desktop whose bundled Claude Code has function hooks; Desktop 1.24012.9 bundles 2.1.219, which does not. What the API can and cannot skin, and why there is no wallpaper or sidebar restyle, is in [desktop-skin/docs/capabilities.md](desktop-skin/docs/capabilities.md).
+
+![boot complete](desktop-skin/docs/boot-4-complete.png)
+![HUD dark](desktop-skin/docs/hud-dark.png)
+![HUD light](desktop-skin/docs/hud-light.png)

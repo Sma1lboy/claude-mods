@@ -1,0 +1,6 @@
+{
+  "name": "desktop-skin",
+  "version": "0.1.0",
+  "description": "SCARLET LINK: a cockpit HUD skin for Claude Code. A boot ceremony when a session first draws, a band above the prompt with an original mascot whose speech bubble reads real session figures, themed spinner words, and /skin for the pane and settings. Draws on the desktop surface and the terminal.",
+  "author": { "name": "sma1lboy" }
+}

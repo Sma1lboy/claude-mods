@@ -12,6 +12,11 @@
       "name": "goal",
       "source": "./goal",
       "description": "Gives the model a goal tool that runs the built-in /goal: set a condition Claude keeps working toward, check it, or clear it."
+    },
+    {
+      "name": "desktop-skin",
+      "source": "./desktop-skin",
+      "description": "SCARLET LINK: a cockpit HUD skin. A boot ceremony, a band above the prompt with an original mascot reading real session figures, themed spinner words, and /skin. Draws on the desktop surface and the terminal."
     }
   ]
 }
