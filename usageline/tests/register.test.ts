@@ -21,6 +21,9 @@ const GIT: Record<string, string> = {
   'diff --cached --shortstat': '',
 }
 
+/** When the test session starts, on the mocked clock. */
+const NOW = Date.UTC(2026, 8, 23, 12)
+
 /** The world under the plugin: a repo at /w/rove whose session cost the test moves. */
 function world(on: On, settings: unknown = SETTINGS) {
   const cost = { usd: 0 }
@@ -28,21 +31,22 @@ function world(on: On, settings: unknown = SETTINGS) {
   on('command.register', ($, e) => ({ value: { command: e.name } }))
   on('session.repo', () => ({ value: { root: '/w/rove', remote: null, internal: false, name: 'rove' } }))
   on('session.model', () => ({ value: 'claude-opus-5-5' }))
-  on('session.usage', () => ({ value: { context: { window: 1_000_000, percent: 42, tokens: 180_600 }, rateLimits: [], cost: { ...cost } } }))
+  on('session.usage', () => ({ value: { startedAt: NOW, context: { window: 1_000_000, percent: 42, tokens: 180_600 }, rateLimits: [], cost: { ...cost } } }))
   on('fs.read', ($, e) => {
     if (e.path !== '/Users/me/.config/usageline/settings.json') throw new Error(`ENOENT ${e.path}`)
     return { value: JSON.stringify(settings) }
   })
   on('process.run', ($, e) => {
     const key = (e.argv as string[]).slice(2).join(' ')
-    return { value: key in GIT ? { exitCode: 0, stdout: GIT[key]!, stderr: '' } : { exitCode: 1, stdout: '', stderr: '' } }
+    const run = { isStdoutTruncated: false, isStderrTruncated: false }
+    return { value: key in GIT ? { ...run, exitCode: 0, stdout: GIT[key]!, stderr: '' } : { ...run, exitCode: 1, stdout: '', stderr: '' } }
   })
   on('ui.render', () => h('Text', null, '? for shortcuts') as RenderElement)
   on('turn.start', ($, e) => ({ turnId: e.turnId }))
   on('turn.complete', ($, e) => ({ text: e.answer }))
   mock.store(on)
   mock.env(on, { HOME: '/Users/me' })
-  return { cost, clock: mock.clock(on, { now: Date.UTC(2026, 8, 23, 12) }) }
+  return { cost, clock: mock.clock(on, { now: NOW }) }
 }
 
 /** The text a drawing shows, children flattened in order. */
