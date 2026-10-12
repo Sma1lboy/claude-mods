@@ -1,0 +1,4 @@
+{
+  "description": "desktop-skin: SCARLET LINK cockpit HUD, boot ceremony and mascot",
+  "modules": ["./register.tsx"]
+}

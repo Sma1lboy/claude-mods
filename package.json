@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
-    "test": "CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 claude plugin test usageline"
+    "test": "CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 claude plugin test usageline && CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 claude plugin test goal && CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 claude plugin test desktop-skin"
   },
   "devDependencies": {
     "typescript": "^5.9.0"

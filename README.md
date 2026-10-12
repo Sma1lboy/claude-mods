@@ -70,12 +70,45 @@ To run it from a checkout: `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 claude --plugin-
 - The cache timer reads in whole minutes: on 2.1.280 every redraw of the line under the prompt flashes one frame, so it redraws only when its text changes.
 - It records turns from when it is installed; older history is not imported.
 
+## goal
+
+Gives the model a tool, `mcp__goal__goal`, that runs Claude Code's own `/goal`. The model can then set a goal itself, the same as you typing `/goal <condition>`: after each turn a separate check decides whether the condition is met, and Claude keeps working until it is. `args` takes a condition, `clear`, or nothing for the status.
+
+```sh
+claude plugin install goal@claude-mods
+```
+
+A plugin can't run a slash command while a tool call holds the turn, so the tool queues the command and `/goal` runs when the turn ends. If you interrupt that turn, the queued command is dropped. So a `clear` from the model lands late: while a goal is active, the goal check keeps that turn going until the goal is met or the check gives up, and only then does the clear run. To stop a goal at once, type `/goal clear` yourself. Two calls in one turn: the later one wins. Calls from subagents are refused. Unlike the built-in `ProposeGoal`, the tool doesn't go through the approval dialog that the `modelProposedGoals` setting controls; installing it means the model can set a goal without asking. `/goal` itself needs a trusted workspace and hooks that aren't disabled.
+
+To run it from a checkout: `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 claude --plugin-dir goal`.
+
 ## Development
 
 ```
 npm install
 npm run typecheck   # tsc over every mod
-npm test            # claude plugin test usageline
+npm test            # claude plugin test, for each mod
 ```
 
 `types/claude-code.d.ts` comes from `/plugin-types` in Claude Code and is not committed; regenerate it after an update.
+
+## desktop-skin
+
+SCARLET LINK, a cockpit HUD skin drawn through the mod API's render sites, on the Claude Code Desktop surface and the terminal. Red and orange with black and amber, hex grids, warning stripes, monospace step codes.
+
+- **Boot ceremony**, the first time the band above the prompt draws: capsule docking → neural link → sync rate rising → boot complete, about 9 seconds. It can be skipped and plays once; `/skin boot` replays it. Under reduced motion it shows its last frame.
+- **HUD band** after it: BOLT, an original helmet robot, peeks up with a speech bubble that reads out the session's real figures (context used, cost, 5-hour and 7-day limits, turns), quips when it has none, and a telemetry strip. A figure the engine does not give is drawn as `—`.
+- **Spinner words** themed on the terminal; on the desktop only the bare `Working` is replaced, step descriptions stay.
+- `/skin` opens the pane: BOLT large, appearance (auto, dark, light), replay, hide, stop motion. `/skin on|off|dark|light|auto|still|motion` sets them directly.
+
+```sh
+claude plugin install desktop-skin@claude-mods
+```
+
+The desktop drawing needs a Claude Desktop whose bundled Claude Code has function hooks; Desktop 1.24012.9 bundles 2.1.219, which does not. What the API can and cannot skin, and why there is no wallpaper or sidebar restyle, is in [desktop-skin/docs/capabilities.md](desktop-skin/docs/capabilities.md).
+
+These images and `desktop-skin/docs/boot.mp4` are Chromium renders of the mod SVG, **not Claude Desktop captures**. Live Desktop rendering and uninstall/restore verification remain pending. Tested with Claude Code **2.1.284**; older function-hook APIs (including 2.1.271) are incompatible.
+
+![boot complete](desktop-skin/docs/boot-4-complete.png)
+![HUD dark](desktop-skin/docs/hud-dark.png)
+![HUD light](desktop-skin/docs/hud-light.png)

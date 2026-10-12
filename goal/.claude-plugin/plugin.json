@@ -1,0 +1,6 @@
+{
+  "name": "goal",
+  "version": "0.1.0",
+  "description": "Gives the model a goal tool that runs the built-in /goal: set a condition Claude keeps working toward, check it, or clear it.",
+  "author": { "name": "sma1lboy" }
+}

@@ -1,0 +1,4 @@
+{
+  "description": "goal: a tool for the model that runs /goal",
+  "modules": ["./register.ts"]
+}
